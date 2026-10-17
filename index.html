@@ -77,14 +77,14 @@
     <!-- 幕布舞台：竖立在追踪海报后方，营造"海报变剧场" -->
     <a-image src="#stage" position="0 0.1 -0.42" width="1.05" height="0.59" material="transparent:false; opacity:0.92"></a-image>
 
-    <!-- 武松：在幕布前挥拳游走 -->
-    <a-image src="#wusong" position="-0.24 0.02 0.06" width="0.20" height="0.267">
-      <a-animation attribute="position" from="-0.24 0.02 0.06" to="-0.17 0.06 0.10" direction="alternate" dur="700" repeat="indefinite" easing="easeInOutSine"></a-animation>
+    <!-- 武松：在幕布前挥拳游走（放大至海报宽约 1/3，观感清晰） -->
+    <a-image src="#wusong" position="-0.32 0.02 0.08" width="0.34" height="0.453">
+      <a-animation attribute="position" from="-0.32 0.02 0.08" to="-0.22 0.08 0.13" direction="alternate" dur="700" repeat="indefinite" easing="easeInOutSine"></a-animation>
     </a-image>
 
-    <!-- 老虎：反向扑击 -->
-    <a-image src="#tiger" position="0.24 0.02 0.05" width="0.22" height="0.294">
-      <a-animation attribute="position" from="0.24 0.02 0.05" to="0.16 0.06 0.09" direction="alternate" dur="820" repeat="indefinite" easing="easeInOutSine"></a-animation>
+    <!-- 老虎：反向扑击（略大于武松，增强张力） -->
+    <a-image src="#tiger" position="0.32 0.02 0.06" width="0.38" height="0.507">
+      <a-animation attribute="position" from="0.32 0.02 0.06" to="0.21 0.08 0.11" direction="alternate" dur="820" repeat="indefinite" easing="easeInOutSine"></a-animation>
     </a-image>
   </a-entity>
 </a-scene>
