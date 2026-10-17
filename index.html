@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI+AR 皮影小剧场</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23b3202a'/%3E%3Cpath d='M32 10c-8 0-13 5-13 12 0 8 13 20 13 20s13-12 13-20c0-7-5-12-13-12zm0 16a4 4 0 110-8 4 4 0 010 8z' fill='%23f5e8d0'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --red:#b3202a; --gold:#d9a441; --bg:#22160d; --paper:#f5e8d0; --ink:#3b2a1a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:"Noto Serif SC","Source Han Serif SC","Songti SC",serif;color:var(--paper)}
+  a-scene{width:100%;height:100%}
+  /* 顶部状态与品牌 */
+  #hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;pointer-events:none}
+  #brand{display:flex;align-items:center;gap:8px;background:rgba(34,22,13,.78);border:1px solid rgba(217,164,65,.5);border-radius:999px;padding:6px 14px;font-size:14px;letter-spacing:2px;color:var(--gold)}
+  #brand b{color:var(--paper);font-weight:700}
+  #status{background:rgba(34,22,13,.78);border:1px solid rgba(217,164,65,.5);border-radius:999px;padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:6px}
+  #status .dot{width:8px;height:8px;border-radius:50%;background:#888;transition:background .4s}
+  #status.on .dot{background:#7ccd7c;box-shadow:0 0 8px #7ccd7c}
+  #status.warn .dot{background:#e0a63a;box-shadow:0 0 8px #e0a63a}
+  /* 扫描提示层 */
+  #scan{position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(20,12,6,.55);backdrop-filter:blur(2px);transition:opacity .5s}
+  #scan.hide{opacity:0;pointer-events:none}
+  #scan .ring{width:230px;height:230px;border:2px solid rgba(217,164,65,.7);border-radius:14px;position:relative;box-shadow:0 0 40px rgba(217,164,65,.15) inset}
+  #scan .ring::before,#scan .ring::after{content:"";position:absolute;width:26px;height:26px;border:3px solid var(--gold);border-radius:3px}
+  #scan .ring::before{top:-4px;left:-4px;border-right:none;border-bottom:none}
+  #scan .ring::after{bottom:-4px;right:-4px;border-left:none;border-top:none}
+  #scan .ring .line{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:sweep 2.2s ease-in-out infinite}
+  @keyframes sweep{0%{top:8px}50%{top:calc(100% - 10px)}100%{top:8px}}
+  #scan p{font-size:17px;letter-spacing:3px;color:var(--paper);text-align:center;line-height:1.9}
+  #scan p small{display:block;font-size:13px;color:rgba(245,232,208,.7);letter-spacing:1px}
+  #scan .tip{font-size:13px;color:rgba(217,164,65,.85);border:1px dashed rgba(217,164,65,.5);border-radius:8px;padding:6px 12px}
+  /* 底部操作栏 */
+  #dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));pointer-events:none}
+  #dock button{pointer-events:auto;flex:1;border:none;border-radius:12px;padding:13px 0;font-family:inherit;font-size:14px;letter-spacing:2px;cursor:pointer;transition:transform .15s,opacity .2s}
+  #dock button:active{transform:scale(.96)}
+  #btnTheater{background:linear-gradient(135deg,#c0333d,#8e1a22);color:#fff;box-shadow:0 4px 18px rgba(140,26,34,.45)}
+  #btnTheater:disabled{opacity:.45;cursor:default;transform:none}
+  #btnStory{background:linear-gradient(135deg,#e6b34e,#b07c22);color:#2a1a08;box-shadow:0 4px 18px rgba(176,124,34,.4)}
+  /* 知识卡面板 */
+  #card{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:26px;background:rgba(20,12,6,.7)}
+  #card.show{display:flex}
+  #card .panel{width:min(560px,92vw);max-height:80vh;overflow:auto;background:var(--paper);color:var(--ink);border:3px solid var(--gold);border-radius:16px;padding:26px 24px 22px;box-shadow:0 12px 50px rgba(0,0,0,.5);animation:rise .35s ease}
+  @keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+  #card .panel h2{font-size:20px;color:var(--red);letter-spacing:4px;text-align:center;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:10px}
+  #card .panel h2::before,#card .panel h2::after{content:"";height:1px;width:38px;background:var(--gold)}
+  #card .panel .sub{text-align:center;font-size:13px;color:rgba(59,42,26,.6);letter-spacing:2px;margin-bottom:18px}
+  #card .sec{border:1px solid rgba(179,32,42,.28);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:rgba(217,164,65,.08)}
+  #card .sec h3{font-size:15px;color:var(--red);letter-spacing:2px;margin-bottom:6px}
+  #card .sec p{font-size:14px;line-height:1.85;color:var(--ink)}
+  #card .sec small{display:block;font-size:12px;color:rgba(59,42,26,.55);margin-top:6px}
+  #card .close{margin-top:14px;width:100%;padding:11px 0;border:none;border-radius:10px;background:var(--red);color:#fff;font-family:inherit;font-size:14px;letter-spacing:4px;cursor:pointer}
+  #toast{position:fixed;left:50%;top:15%;transform:translateX(-50%);z-index:40;background:rgba(34,22,13,.92);border:1px solid var(--gold);color:var(--paper);border-radius:999px;padding:9px 18px;font-size:13px;letter-spacing:1px;opacity:0;pointer-events:none;transition:opacity .3s}
+  #toast.show{opacity:1}
+  .no-camera{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:var(--bg);padding:26px;text-align:center;line-height:2}
+  .no-camera.show{display:flex}
+</style>
+</head>
+<body>
+
+<a-scene mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; filterMinCF: 0.05; filterBeta: 120; missTolerance: 4;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-height-aware="1:1" embedded>
+  <a-assets>
+    <img id="stage" src="./stage.png" crossorigin="anonymous">
+    <img id="wusong" src="./wusong.png" crossorigin="anonymous">
+    <img id="wusongPunch" src="./wusong-punch.png" crossorigin="anonymous">
+    <img id="tiger" src="./tiger.png" crossorigin="anonymous">
+    <img id="tigerPounce" src="./tiger-pounce.png" crossorigin="anonymous">
+  </a-assets>
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <a-entity mindar-image-target="targetIndex: 0">
+    <!-- 幕布舞台：竖立在追踪海报后方，营造"海报变剧场" -->
+    <a-image src="#stage" position="0 0.1 -0.42" width="1.05" height="0.59" material="transparent:false; opacity:0.92"></a-image>
+
+    <!-- 武松：在幕布前挥拳游走 -->
+    <a-image src="#wusong" position="-0.24 0.02 0.06" width="0.20" height="0.267">
+      <a-animation attribute="position" from="-0.24 0.02 0.06" to="-0.17 0.06 0.10" direction="alternate" dur="700" repeat="indefinite" easing="easeInOutSine"></a-animation>
+    </a-image>
+
+    <!-- 老虎：反向扑击 -->
+    <a-image src="#tiger" position="0.24 0.02 0.05" width="0.22" height="0.294">
+      <a-animation attribute="position" from="0.24 0.02 0.05" to="0.16 0.06 0.09" direction="alternate" dur="820" repeat="indefinite" easing="easeInOutSine"></a-animation>
+    </a-image>
+  </a-entity>
+</a-scene>
+
+<div id="hud">
+  <div id="brand"><b>皮影小剧场</b> · AI+AR</div>
+  <div id="status"><span class="dot"></span><span id="statusTxt">加载中</span></div>
+</div>
+
+<div id="scan">
+  <div class="ring"><div class="line"></div></div>
+  <p>对准皮影海报<br><small>保持画面清晰，慢慢移动手机直到剧场出现</small></p>
+  <div class="tip">需要 HTTPS 或 localhost 访问 · 允许摄像头权限</div>
+</div>
+
+<div id="dock">
+  <button id="btnTheater" disabled>切换场景</button>
+  <button id="btnStory">AI 讲戏</button>
+</div>
+
+<div id="card">
+  <div class="panel">
+    <h2>AI 讲戏</h2>
+    <div class="sub">—— 皮影的门道 ——</div>
+    <div class="sec"><h3>流派</h3><p>中国皮影在各地形成了众多流派，不同地区的造型、唱腔与表演风格各有特色，是"一乡一影"的地方文化名片。</p><small>方向提示：展示时可引用你所在地区或代表性流派的介绍</small></div>
+    <div class="sec"><h3>雕刻工艺</h3><p>选皮、制皮、镂刻、上色四道核心工序，讲究"刻得透、看得真"，皮影人物的关节分段让每个动作都活起来。</p><small>方向提示：可用素材库中的武松、老虎镂空细节作现场对照</small></div>
+    <div class="sec"><h3>操纵技法</h3><p>传统艺人以签子操纵皮影，通过手腕的捻、挑、甩，让角色行云流水；本 demo 用"手势即操控"，把这份功夫搬进手机。</p><small>方向提示：结合本 demo 的拖拽／手势交互来讲更有代入感</small></div>
+    <button class="close">收起</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="no-camera" id="noCamera">
+  <div>
+    <p style="font-size:18px;letter-spacing:3px;color:var(--gold)">无法访问摄像头</p>
+    <p style="font-size:13px">请检查：<br>1) 通过 HTTPS 或 localhost 打开本页（手机请部署到 GitHub Pages 等 HTTPS 站点）<br>2) 浏览器地址栏允许摄像头权限<br>3) 换用支持 WebRTC 的浏览器（Chrome / Safari / Edge）</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var scan=$('scan'), status=$('status'), statusTxt=$('statusTxt'),
+      btnTheater=$('btnTheater'), btnStory=$('btnStory'), card=$('card'),
+      toast=$('toast'), noCamera=$('noCamera');
+  var detected=false, camError=false;
+
+  function showToast(msg){
+    toast.textContent=msg; toast.classList.add('show');
+    clearTimeout(showToast._t); showToast._t=setTimeout(function(){toast.classList.remove('show');},2200);
+  }
+
+  function setStatus(txt, cls){
+    statusTxt.textContent=txt;
+    status.className=cls?cls:'';
+  }
+
+  // —— MindAR 生命周期 ——
+  var scene=document.querySelector('a-scene');
+  var target=document.querySelector('mindar-image-target');
+  function onFound(){
+    if(detected) return; detected=true;
+    scan.classList.add('hide');
+    setStatus('剧场已降临','on');
+    btnTheater.disabled=false;
+    showToast('扫描成功，剧场已降临');
+  }
+  function onLost(){
+    if(!detected) return; detected=false;
+    scan.classList.remove('hide');
+    setStatus('目标丢失','warn');
+  }
+  scene.addEventListener('loaded', function(){
+    setStatus('等待识别','warn');
+    showToast('请将皮影海报对准摄像头');
+  });
+  scene.addEventListener('mindar-image-target-found', onFound);
+  scene.addEventListener('mindar-image-target-lost', onLost);
+  if(target){ target.addEventListener('targetFound', onFound); target.addEventListener('targetLost', onLost); }
+  scene.addEventListener('camera-error', function(){
+    if(camError) return; camError=true;
+    noCamera.classList.add('show');
+  });
+
+  // —— 场景切换：武松站姿 ↔ 打斗姿态 ——
+  var theaterMode=0;
+  var modes=[
+    {wu:'#wusong', ti:'#tiger', btn:'切换为打斗'},
+    {wu:'#wusongPunch', ti:'#tigerPounce', btn:'切换为入场'}
+  ];
+  btnTheater.addEventListener('click', function(){
+    if(!detected){ showToast('请先扫描海报'); return; }
+    theaterMode=(theaterMode+1)%modes.length;
+    var m=modes[theaterMode];
+    var wu=document.querySelector('a-image[src="#wusong"]');
+    var ti=document.querySelector('a-image[src="#tiger"]');
+    wu.setAttribute('src', m.wu);
+    ti.setAttribute('src', m.ti);
+    btnTheater.textContent=m.btn;
+    showToast(theaterMode?'打斗姿态已登场':'角色已回到入场姿态');
+  });
+
+  // —— AI 讲戏 ——
+  btnStory.addEventListener('click', function(){
+    card.classList.add('show');
+  });
+  card.querySelector('.close').addEventListener('click', function(){
+    card.classList.remove('show');
+  });
+  card.addEventListener('click', function(e){ if(e.target===card) card.classList.remove('show'); });
+
+  // 兜底：若 3 秒仍未加载完成提示
+  setTimeout(function(){
+    if(!detected && !camError){
+      var st=statusTxt.textContent;
+      if(st==='加载中') setStatus('识别中','warn');
+    }
+  }, 3000);
+})();
+</script>
+</body>
+</html>
