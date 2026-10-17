@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI+AR 皮影小剧场</title>
+<!-- AR 框架脚本自托管（本地 js/ 目录），不依赖外部 CDN，避免国内网络加载失败导致无法启动摄像头 -->
+<script src="./js/aframe.min.js"></script>
+<script src="./js/mindar-image-aframe.prod.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23b3202a'/%3E%3Cpath d='M32 10c-8 0-13 5-13 12 0 8 13 20 13 20s13-12 13-20c0-7-5-12-13-12zm0 16a4 4 0 110-8 4 4 0 010 8z' fill='%23f5e8d0'/%3E%3C/svg%3E">
 <style>
   :root{
