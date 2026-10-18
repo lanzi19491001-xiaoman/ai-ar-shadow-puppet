@@ -7,6 +7,7 @@
 <!-- AR 框架脚本自托管（本地 js/ 目录），不依赖外部 CDN，避免国内网络加载失败导致无法启动摄像头 -->
 <script src="./js/aframe.min.js"></script>
 <script src="./js/mindar-image-aframe.prod.js"></script>
+<script type="module" src="./js/gesture.mjs"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23b3202a'/%3E%3Cpath d='M32 10c-8 0-13 5-13 12 0 8 13 20 13 20s13-12 13-20c0-7-5-12-13-12zm0 16a4 4 0 110-8 4 4 0 010 8z' fill='%23f5e8d0'/%3E%3C/svg%3E">
 <style>
   :root{
@@ -35,6 +36,8 @@
   #scan p{font-size:17px;letter-spacing:3px;color:var(--paper);text-align:center;line-height:1.9}
   #scan p small{display:block;font-size:13px;color:rgba(245,232,208,.7);letter-spacing:1px}
   #scan .tip{font-size:13px;color:rgba(217,164,65,.85);border:1px dashed rgba(217,164,65,.5);border-radius:8px;padding:6px 12px}
+  /* 手势操控提示条 */
+  #gesture{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(34,22,13,.82);border:1px solid rgba(217,164,65,.5);border-radius:999px;padding:6px 14px;font-size:12px;letter-spacing:1px;color:var(--paper);max-width:86vw;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* 底部操作栏 */
   #dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:12px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));pointer-events:none}
   #dock button{pointer-events:auto;flex:1;border:none;border-radius:12px;padding:13px 0;font-family:inherit;font-size:14px;letter-spacing:2px;cursor:pointer;transition:transform .15s,opacity .2s}
@@ -74,18 +77,21 @@
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
   <a-entity mindar-image-target="targetIndex: 0">
-    <!-- 幕布舞台：竖立在追踪海报后方，营造"海报变剧场" -->
+    <!-- 幕布舞台：竖立在追踪海报后方，营造"海报变剧场"（不受手势操控） -->
     <a-image src="#stage" position="0 0.1 -0.42" width="1.05" height="0.59" material="transparent:false; opacity:0.92"></a-image>
 
-    <!-- 武松：在幕布前挥拳游走（放大至海报宽约 1/3，观感清晰） -->
-    <a-image src="#wusong" position="-0.32 0.02 0.08" width="0.34" height="0.453">
-      <a-animation attribute="position" from="-0.32 0.02 0.08" to="-0.22 0.08 0.13" direction="alternate" dur="700" repeat="indefinite" easing="easeInOutSine"></a-animation>
-    </a-image>
+    <!-- 角色组 #troupe：手势隔空操控的整体（张开手掌跟随移动 / 握拳定身） -->
+    <a-entity id="troupe">
+      <!-- 武松：在幕布前挥拳游走（放大至海报宽约 1/3，观感清晰） -->
+      <a-image src="#wusong" position="-0.32 0.02 0.08" width="0.34" height="0.453">
+        <a-animation attribute="position" from="-0.32 0.02 0.08" to="-0.22 0.08 0.13" direction="alternate" dur="700" repeat="indefinite" easing="easeInOutSine"></a-animation>
+      </a-image>
 
-    <!-- 老虎：反向扑击（略大于武松，增强张力） -->
-    <a-image src="#tiger" position="0.32 0.02 0.06" width="0.38" height="0.507">
-      <a-animation attribute="position" from="0.32 0.02 0.06" to="0.21 0.08 0.11" direction="alternate" dur="820" repeat="indefinite" easing="easeInOutSine"></a-animation>
-    </a-image>
+      <!-- 老虎：反向扑击（略大于武松，增强张力） -->
+      <a-image src="#tiger" position="0.32 0.02 0.06" width="0.38" height="0.507">
+        <a-animation attribute="position" from="0.32 0.02 0.06" to="0.21 0.08 0.11" direction="alternate" dur="820" repeat="indefinite" easing="easeInOutSine"></a-animation>
+      </a-image>
+    </a-entity>
   </a-entity>
 </a-scene>
 
@@ -93,6 +99,8 @@
   <div id="brand"><b>皮影小剧场</b> · AI+AR</div>
   <div id="status"><span class="dot"></span><span id="statusTxt">加载中</span></div>
 </div>
+
+<div id="gesture"><span id="gestureTxt">手势识别加载中…</span></div>
 
 <div id="scan">
   <div class="ring"><div class="line"></div></div>
