@@ -54,8 +54,9 @@ import { FilesetResolver, HandLandmarker } from './vision_bundle.mjs';
       var p = troupe.getAttribute('position') || {x:0,y:0,z:0};
       if(handValid && currentGesture === 'open'){
         // 手归一化坐标 → 舞台坐标：x 左右平移，y 抬升（提线感：手抬角色升）
-        var tx = (handX - 0.5) * 1.0;
-        var ty = (0.5 - handY) * 0.5 + 0.02;
+        // 钳制在幕布范围内（x ±0.35、y 0.02~0.30），避免角色被移出舞台/沉入海报平面
+        var tx = Math.max(-0.35, Math.min(0.35, (handX - 0.5) * 0.9));
+        var ty = Math.max(0.02, Math.min(0.30, (0.5 - handY) * 0.5 + 0.02));
         p.x += (tx - p.x) * 0.25;
         p.y += (ty - p.y) * 0.25;
         troupe.setAttribute('position', p);
